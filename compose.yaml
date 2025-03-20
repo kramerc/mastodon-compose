@@ -1,0 +1,29 @@
+services:
+  wireguard:
+    image: lscr.io/linuxserver/wireguard:latest
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE #optional
+    environment:
+      - PUID=1451001103
+      - PGID=1451000513
+      - TZ=America/Los_Angeles
+      - LOG_CONFS=true #optional
+    volumes:
+      - ./wireguard:/config
+      - /lib/modules:/lib/modules #optional
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: unless-stopped
+
+  mastodon:
+    image: lscr.io/linuxserver/mastodon:latest
+    env_file: .env.production
+    network_mode: service:wireguard
+    environment:
+      - PUID=1451001103
+      - PGID=1451000513
+      - TZ=America/Los_Angeles
+    volumes:
+      - ./config:/config
+    restart: unless-stopped
