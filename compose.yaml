@@ -5,8 +5,8 @@ services:
       - NET_ADMIN
       - SYS_MODULE #optional
     environment:
-      - PUID=1451001103
-      - PGID=1451000513
+      - PUID=1000
+      - PGID=1000
       - TZ=America/Los_Angeles
       - LOG_CONFS=true #optional
     volumes:
@@ -21,8 +21,8 @@ services:
     env_file: .env.production
     network_mode: service:wireguard
     environment:
-      - PUID=1451001103
-      - PGID=1451000513
+      - PUID=1000
+      - PGID=1000
       - TZ=America/Los_Angeles
     volumes:
       - ./config:/config
