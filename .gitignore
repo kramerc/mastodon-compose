@@ -1,3 +1,4 @@
 config/
+redis/
 wireguard/
 .env.production

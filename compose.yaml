@@ -1,29 +1,21 @@
 services:
-  wireguard:
-    image: lscr.io/linuxserver/wireguard:latest
-    cap_add:
-      - NET_ADMIN
-      - SYS_MODULE #optional
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/Los_Angeles
-      - LOG_CONFS=true #optional
-    volumes:
-      - ./wireguard:/config
-      - /lib/modules:/lib/modules #optional
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
-    restart: always
-
   mastodon:
     image: lscr.io/linuxserver/mastodon:latest
     env_file: .env.production
-    network_mode: service:wireguard
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=America/Los_Angeles
+    ports:
+      - 8080:80
+      - 8443:443
     volumes:
-      - ./config:/config
+      - /mnt/mastodon:/config
+    restart: always
+
+  redis:
+    image: redis:8
+    volumes:
+      - ./redis:/data
+    command: ["redis-server", "--appendonly", "yes"]
     restart: always
