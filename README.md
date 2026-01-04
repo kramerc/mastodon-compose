@@ -1,51 +1,44 @@
 # Mastodon Docker Compose Setup
 
-This repository contains a Docker Compose configuration for running a Mastodon instance with WireGuard VPN support.
+This repository contains a Docker Compose configuration for running a Mastodon instance.
 
 ## Architecture
 
 The setup consists of two main services:
 
-- **WireGuard**: Provides VPN connectivity and network isolation
-- **Mastodon**: The social media platform running through the WireGuard network
+- **Mastodon**: The social media platform
+- **Redis**: In-memory data store for caching and queues
 
 ## Services
 
-### WireGuard Service
-
-The WireGuard service provides secure VPN connectivity and acts as the network gateway for the Mastodon instance.
-
-**Image**: `lscr.io/linuxserver/wireguard:latest`
-
-**Capabilities**:
-- `NET_ADMIN`: Network administration capabilities
-- `SYS_MODULE`: System module loading (optional)
-
-**Environment Variables**:
-- `PUID=1451001103`: User ID for file ownership
-- `PGID=1451000513`: Group ID for file ownership
-- `TZ=America/Los_Angeles`: Timezone configuration
-- `LOG_CONFS=true`: Enable configuration logging (optional)
-
-**Volumes**:
-- `./wireguard:/config`: WireGuard configuration directory
-- `/lib/modules:/lib/modules`: Kernel modules (optional)
-
 ### Mastodon Service
 
-The Mastodon service runs the social media platform and uses the WireGuard service for network connectivity.
+The Mastodon service runs the social media platform.
 
 **Image**: `lscr.io/linuxserver/mastodon:latest`
 
-**Network Mode**: `service:wireguard` (shares network stack with WireGuard)
-
 **Environment Variables**:
-- `PUID=1451001103`: User ID for file ownership
-- `PGID=1451000513`: Group ID for file ownership  
+- `PUID=1000`: User ID for file ownership
+- `PGID=1000`: Group ID for file ownership  
 - `TZ=America/Los_Angeles`: Timezone configuration
 
+**Ports**:
+- `8080:80`: HTTP port
+- `8443:443`: HTTPS port
+
 **Volumes**:
-- `./config:/config`: Mastodon configuration directory
+- `/mnt/mastodon:/config`: Mastodon configuration directory
+
+### Redis Service
+
+The Redis service provides in-memory data storage for caching and background job queues.
+
+**Image**: `redis:8`
+
+**Volumes**:
+- `./redis:/data`: Redis data persistence directory
+
+**Command**: `redis-server --appendonly yes` (enables data persistence)
 
 ## Environment Configuration
 
@@ -89,9 +82,8 @@ The Mastodon service uses environment variables defined in `.env.production`. He
 
 | Variable | Description | Example Value |
 |----------|-------------|---------------|
-| `REDIS_HOST` | Redis server host | `jasper.kekra.net` |
-| `REDIS_PORT` | Redis server port | `30059` |
-| `REDIS_PASSWORD` | Redis authentication password | `[configured]` |
+| `REDIS_HOST` | Redis server host | `redis` |
+| `REDIS_PORT` | Redis server port | `6379` |
 
 ### S3 Storage Configuration
 
@@ -126,19 +118,14 @@ The Mastodon service uses environment variables defined in `.env.production`. He
 ├── compose.yaml           # Docker Compose configuration
 ├── .env.production       # Environment variables for Mastodon
 ├── update.sh            # Update script
-├── config/              # Mastodon configuration files
-│   ├── keys/           # SSL certificates
-│   ├── log/            # Log files
-│   ├── mastodon/       # Mastodon data
-│   ├── nginx/          # Nginx configuration
-│   ├── php/            # PHP configuration
-│   └── www/            # Web files
-└── wireguard/          # WireGuard configuration
-    ├── privatekey
-    ├── publickey
-    ├── coredns/
-    ├── templates/
-    └── wg_confs/
+├── redis/               # Redis data directory
+└── /mnt/mastodon/       # Mastodon configuration files (mounted)
+    ├── keys/           # SSL certificates
+    ├── log/            # Log files
+    ├── mastodon/       # Mastodon data
+    ├── nginx/          # Nginx configuration
+    ├── php/            # PHP configuration
+    └── www/            # Web files
 ```
 
 ## Usage
@@ -177,7 +164,7 @@ docker compose logs
 
 # View specific service logs
 docker compose logs mastodon
-docker compose logs wireguard
+docker compose logs redis
 
 # Follow logs in real-time
 docker compose logs -f
@@ -187,24 +174,22 @@ docker compose logs -f
 
 1. **Environment Variables**: The `.env.production` file contains sensitive credentials. Ensure it's properly secured and not committed to version control.
 
-2. **WireGuard Configuration**: The WireGuard service has elevated privileges (`NET_ADMIN`, `SYS_MODULE`). Ensure the WireGuard configuration is properly secured.
+2. **SSL/TLS**: The configuration includes SSL certificates in the `/mnt/mastodon/keys/` directory for secure communications.
 
-3. **Network Isolation**: Mastodon runs through the WireGuard network, providing an additional layer of network isolation.
-
-4. **SSL/TLS**: The configuration includes SSL certificates in the `config/keys/` directory for secure communications.
+3. **Ports**: The Mastodon service exposes ports 8080 (HTTP) and 8443 (HTTPS). Ensure proper firewall rules are in place.
 
 ## Backup Considerations
 
 Important directories to backup:
-- `./config/` - Contains Mastodon configuration and data
-- `./wireguard/` - Contains WireGuard configuration
+- `/mnt/mastodon/` - Contains Mastodon configuration and data
+- `./redis/` - Contains Redis data
 - `.env.production` - Contains environment configuration
 
 ## Troubleshooting
 
-1. **Permission Issues**: Ensure the `PUID` and `PGID` values match your system's user and group IDs.
+1. **Permission Issues**: Ensure the `PUID` (1000) and `PGID` (1000) values match your system's user and group IDs for `/mnt/mastodon`.
 
-2. **Network Connectivity**: If Mastodon can't connect to external services, check the WireGuard configuration and routing.
+2. **Redis Connection**: If Mastodon can't connect to Redis, ensure the Redis service is running and `REDIS_HOST=redis` in `.env.production`.
 
 3. **Database Connection**: Verify the database credentials and network connectivity to the PostgreSQL server.
 
@@ -214,6 +199,6 @@ Important directories to backup:
 
 Regular maintenance tasks:
 1. Run `./update.sh` to keep services updated
-2. Monitor log files in `config/log/`
-3. Check disk usage for the `config/` directory
+2. Monitor log files in `/mnt/mastodon/log/`
+3. Check disk usage for the `/mnt/mastodon/` and `./redis/` directories
 4. Verify backup procedures
