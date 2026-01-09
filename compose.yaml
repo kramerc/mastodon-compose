@@ -10,7 +10,7 @@ services:
       - 8080:80
       - 8443:443
     volumes:
-      - /mnt/mastodon:/config
+      - ./data:/config
     restart: always
 
   redis:

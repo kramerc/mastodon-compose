@@ -27,7 +27,7 @@ The Mastodon service runs the social media platform.
 - `8443:443`: HTTPS port
 
 **Volumes**:
-- `/mnt/mastodon:/config`: Mastodon configuration directory
+- `./data:/config`: Mastodon configuration directory
 
 ### Redis Service
 
@@ -115,11 +115,11 @@ The Mastodon service uses environment variables defined in `.env.production`. He
 ## File Structure
 
 ```
-├── compose.yaml           # Docker Compose configuration
-├── .env.production       # Environment variables for Mastodon
-├── update.sh            # Update script
-├── redis/               # Redis data directory
-└── /mnt/mastodon/       # Mastodon configuration files (mounted)
+├── compose.yaml        # Docker Compose configuration
+├── .env.production     # Environment variables for Mastodon
+├── update.sh           # Update script
+├── redis/              # Redis data directory
+└── ./data/             # Mastodon configuration files (mounted)
     ├── keys/           # SSL certificates
     ├── log/            # Log files
     ├── mastodon/       # Mastodon data
@@ -174,20 +174,20 @@ docker compose logs -f
 
 1. **Environment Variables**: The `.env.production` file contains sensitive credentials. Ensure it's properly secured and not committed to version control.
 
-2. **SSL/TLS**: The configuration includes SSL certificates in the `/mnt/mastodon/keys/` directory for secure communications.
+2. **SSL/TLS**: The configuration includes SSL certificates in the `./data/keys/` directory for secure communications.
 
 3. **Ports**: The Mastodon service exposes ports 8080 (HTTP) and 8443 (HTTPS). Ensure proper firewall rules are in place.
 
 ## Backup Considerations
 
 Important directories to backup:
-- `/mnt/mastodon/` - Contains Mastodon configuration and data
+- `./data/` - Contains Mastodon configuration and data
 - `./redis/` - Contains Redis data
 - `.env.production` - Contains environment configuration
 
 ## Troubleshooting
 
-1. **Permission Issues**: Ensure the `PUID` (1000) and `PGID` (1000) values match your system's user and group IDs for `/mnt/mastodon`.
+1. **Permission Issues**: Ensure the `PUID` (1000) and `PGID` (1000) values match your system's user and group IDs for `./data`.
 
 2. **Redis Connection**: If Mastodon can't connect to Redis, ensure the Redis service is running and `REDIS_HOST=redis` in `.env.production`.
 
@@ -199,6 +199,6 @@ Important directories to backup:
 
 Regular maintenance tasks:
 1. Run `./update.sh` to keep services updated
-2. Monitor log files in `/mnt/mastodon/log/`
-3. Check disk usage for the `/mnt/mastodon/` and `./redis/` directories
+2. Monitor log files in `./data/log/`
+3. Check disk usage for the `./data/` and `./redis/` directories
 4. Verify backup procedures
